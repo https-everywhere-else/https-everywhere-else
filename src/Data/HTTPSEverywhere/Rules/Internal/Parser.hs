@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE LambdaCase          #-}
 
 module Data.HTTPSEverywhere.Rules.Internal.Parser (
   parseRuleSets,
@@ -9,15 +10,18 @@ module Data.HTTPSEverywhere.Rules.Internal.Parser (
 #endif
 ) where
 
-import Prelude hiding (head, last, tail, init, length)
+import Prelude hiding (take, drop)
 import Control.Applicative ((<$>))
 import Control.Lens (toListOf, only, to, (^..), (^.), (&), (<&>), _Just)
 import Control.Monad (join)
+import Control.Monad.State (State, evalState, modify', gets)
+import Data.Bifunctor (bimap)
+import Data.Bool (bool)
 import Data.Functor.Infix ((<$$>))
-import Data.Maybe (catMaybes, fromJust, fromMaybe)
+import Data.Maybe (catMaybes)
 import Data.String.Conversions (cs)
 import qualified Data.Text as Strict (Text)
-import Data.Text (append, head, last, tail, init, replace, length)
+import Data.Text (dropEnd, dropWhileEnd, drop, isSuffixOf, takeEnd, take)
 import qualified Data.Text.Lazy as Lazy (Text)
 import Network.HTTP.Client (Cookie(..))
 import Network.URI (URI(uriAuthority), URIAuth(uriRegName), parseURI)
@@ -37,15 +41,21 @@ parseRuleSet xml = xml ^. attr "name" <&> \ruleSetName -> do
       ruleSetCookieRules = xml ^.. allNamed (only "securecookie") . to parseCookieRule & catMaybes
   RuleSet ruleSetName ruleSetTargets ruleSetRules ruleSetExclusions ruleSetCookieRules
 
+parseTarget' :: State (Strict.Text, Strict.Text) Bool
+parseTarget' = do
+  gets ((== ".*") . takeEnd 2 . fst) >>= bool (return ())
+    (modify' (bimap (dropEnd 2) (dropEnd 1 . dropWhileEnd (/= '.'))))
+  gets (take 2 . fst) >>= \case
+    "*." -> do
+      suffix <- gets (drop 1 . fst) -- Don't drop the dot, we expect some prefix.
+      isSuffixOf suffix <$> gets snd
+    _ -> gets (uncurry (==))
+
 parseTarget :: Strict.Text -> Target
-parseTarget = Target . checkRegName . fromJust . match . fromWildcard . replace "." "\\."
-  where fromWildcard str
-          | length str == 0 = str
-          | head str == '*' = flip append ".*" $ tail str
-          | last str == '*' = append ".*" $ init str
-          | otherwise       = str
-        checkRegName predicate = fromMaybe False . (predicate <$$> getRegName)
-        getRegName = cs . uriRegName <$$> uriAuthority
+parseTarget target = Target $ \uri -> do
+  case uriRegName <$> uriAuthority uri of
+    Just domain -> evalState parseTarget' (target, cs domain)
+    Nothing -> False
 
 parseRule :: Element -> Maybe Rule
 parseRule element = do

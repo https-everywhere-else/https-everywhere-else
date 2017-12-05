@@ -22,11 +22,16 @@ spec = do
     it "*.facebook.com should match s-static.ak.facebook.com" $ do
       let url = unsafeParseURL "http://s-static.ak.facebook.com"
       checkTarget "*.facebook.com" url `shouldBe` True
-    it "google.* should match google.com.id" $ do
-      let url = unsafeParseURL "http://google.com.id"
+    it "google.* should match google.nl" $ do
+      let url = unsafeParseURL "http://google.nl"
       checkTarget "google.*" url `shouldBe` True
-    it "*.google.* should not match google.com.id" $ do
+    -- Right-side wildcards apply only one-level deep.
+    it "google.* should not match google.com.id" $ do
       let url = unsafeParseURL "http://google.com.id"
+      checkTarget "google.*" url `shouldBe` False
+    -- Wildcards expect there exist some prefix.
+    it "*.google.* should not match google.nl" $ do
+      let url = unsafeParseURL "http://google.nl"
       checkTarget "*.google.*" url `shouldBe` False
   describe "parseRuleSets" $ do
     let rulesets = parseRuleSets fixture
