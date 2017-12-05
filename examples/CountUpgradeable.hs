@@ -1,0 +1,32 @@
+{-# LANGUAGE PackageImports #-}
+
+module Main (main) where
+
+import "foldl" Control.Foldl (Fold(..))
+import qualified "foldl" Control.Foldl as Foldl
+import "base" Control.Monad (forever)
+import "base" Data.Bool (bool)
+import "https-everywhere-rules" Data.HTTPSEverywhere.Rules (rewriteURL)
+import "base" Data.Monoid (Sum(..))
+import "network-uri" Network.URI (URI, parseURI)
+import "pipes" Pipes (Pipe, Producer, lift, yield, await, (>->))
+import "pipes" Pipes.Prelude (stdinLn)
+import qualified "pipes" Pipes.Prelude as Pipes (fold)
+
+parse :: Monad m => Pipe String URI m ()
+parse = forever $ parseURI <$> await >>= maybe (return ()) yield
+
+check :: Pipe URI Bool IO ()
+check = forever $ do
+  src <- await
+  tgt <- lift $ rewriteURL src
+  yield $ src /= tgt
+
+fold :: Monad m => Fold a b -> Producer a m () -> m b
+fold (Fold step begin done) = Pipes.fold step begin done
+
+proportion :: Fold Bool (Int, Int)
+proportion = (,) <$> Foldl.foldMap (Sum . bool 0 1) getSum <*> Foldl.length
+
+main :: IO ()
+main = fold proportion (stdinLn >-> parse >-> check) >>= print

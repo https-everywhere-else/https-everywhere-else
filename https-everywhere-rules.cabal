@@ -131,3 +131,21 @@ executable redirect-proxy
       False
   default-language:
     Haskell2010
+
+executable count-upgradeable
+  hs-source-dirs:
+    examples
+  main-is:
+    CountUpgradeable.hs
+  if flag(build-examples)
+    build-depends:
+      base,
+      foldl,
+      https-everywhere-rules,
+      network-uri,
+      pipes
+  if !(flag(build-examples))
+    buildable:
+      False
+  default-language:
+    Haskell2010
