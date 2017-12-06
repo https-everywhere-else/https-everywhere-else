@@ -1,4 +1,6 @@
 module Data.HTTPSEverywhere.Rules (
+  RuleSet,
+  getRulesets,
   rewriteURL,
   rewriteCookie
 ) where
@@ -12,11 +14,11 @@ import Network.URI (URI)
 import Pipes ((>->))
 import Pipes.Prelude (head, null)
 import Control.Monad (join)
-import Data.HTTPSEverywhere.Rules.Internal (getRulesetsMatching, havingRulesThatTrigger, havingCookieRulesThatTrigger, setSecureFlag)
+import Data.HTTPSEverywhere.Rules.Internal (getRulesets, getRulesetsMatching, havingRulesThatTrigger, havingCookieRulesThatTrigger, setSecureFlag, RuleSet)
 
-rewriteURL :: URI -> IO URI
-rewriteURL url = getRulesetsMatching url >-> havingRulesThatTrigger url & head <&> fromMaybe url . join
+rewriteURL :: [RuleSet] -> URI -> IO URI
+rewriteURL rs url = getRulesetsMatching rs url >-> havingRulesThatTrigger url & head <&> fromMaybe url . join
 
-rewriteCookie :: URI -> Cookie -> IO Cookie
-rewriteCookie url cookie = null producer <&> setSecureFlag cookie `bool` cookie
-  where producer = getRulesetsMatching url >-> havingCookieRulesThatTrigger cookie
+rewriteCookie :: [RuleSet] -> URI -> Cookie -> IO Cookie
+rewriteCookie rs url cookie = null producer <&> setSecureFlag cookie `bool` cookie
+  where producer = getRulesetsMatching rs url >-> havingCookieRulesThatTrigger cookie

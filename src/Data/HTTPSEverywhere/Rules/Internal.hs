@@ -1,10 +1,12 @@
 {-# LANGUAGE CPP #-}
 
 module Data.HTTPSEverywhere.Rules.Internal (
+  getRulesets,
   getRulesetsMatching,
   havingRulesThatTrigger,
   havingCookieRulesThatTrigger,
   setSecureFlag,
+  RuleSet,
 #ifdef TEST
   hasTargetMatching,
   hasTriggeringRuleOn,
@@ -23,20 +25,23 @@ import Data.Maybe (isJust)
 import Network.HTTP.Client (Cookie(..))
 import Network.URI (URI)
 import Pipes (Pipe, Producer, for, each, await, yield, lift, (>->))
-import Pipes.Prelude (filter)
+import Pipes.Prelude (filter, toListM)
 
 import Data.HTTPSEverywhere.Rules.Internal.Parser (parseRuleSets)
 import qualified Data.HTTPSEverywhere.Rules.Internal.Raw as Raw (getRule, getRules)
 import Data.HTTPSEverywhere.Rules.Internal.Types (RuleSet(..), Target(..), Exclusion(..), Rule(..), CookieRule(..))
 
-getRulesets :: Producer RuleSet IO ()
-getRulesets = lift Raw.getRules
+getRulesets' :: Producer RuleSet IO ()
+getRulesets' = lift Raw.getRules
           >>= flip (for . each) (flip (for . each) yield <=< lift . (parseRuleSets <$$> Raw.getRule))
 
-getRulesetsMatching :: URI -> Producer RuleSet IO ()
-getRulesetsMatching url = getRulesets
-                      >-> filter (flip hasTargetMatching url)
-                      >-> filter (not . flip hasExclusionMatching url)
+getRulesets :: IO [RuleSet]
+getRulesets = toListM getRulesets'
+
+getRulesetsMatching :: [RuleSet] -> URI -> Producer RuleSet IO ()
+getRulesetsMatching rs url = each rs
+                         >-> filter (flip hasTargetMatching url)
+                         >-> filter (not . flip hasExclusionMatching url)
 
 havingRulesThatTrigger :: URI -> Pipe RuleSet (Maybe URI) IO ()
 havingRulesThatTrigger url = flip hasTriggeringRuleOn url <$> await 
