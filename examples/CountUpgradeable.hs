@@ -7,6 +7,7 @@ import qualified "foldl" Control.Foldl as Foldl
 import "base" Control.Monad (forever)
 import "base" Data.Bool (bool)
 import "https-everywhere-rules" Data.HTTPSEverywhere.Rules (rewriteURL, RuleSet, getRulesets)
+import "base" Data.Maybe (isJust)
 import "base" Data.Monoid (Sum(..))
 import "network-uri" Network.URI (URI, parseURI)
 import "pipes" Pipes (Pipe, Producer, lift, yield, await, (>->))
@@ -17,9 +18,7 @@ parse :: Monad m => Pipe String URI m ()
 parse = forever $ parseURI <$> await >>= maybe (return ()) yield
 
 check :: [RuleSet] -> Pipe URI Bool IO ()
-check rs = forever $ do
-  src <- await
-  yield $ src /= rewriteURL rs src
+check rs = forever $ await >>= yield . isJust . rewriteURL rs
 
 fold :: Monad m => Fold a b -> Producer a m () -> m b
 fold (Fold step begin done) = Pipes.fold step begin done

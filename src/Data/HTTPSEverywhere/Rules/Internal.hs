@@ -43,9 +43,9 @@ getRulesetsMatching rs url = each rs
                          >-> filter (flip hasTargetMatching url)
                          >-> filter (not . flip hasExclusionMatching url)
 
-havingRulesThatTrigger :: Monad m => URI -> Pipe RuleSet (Maybe URI) m ()
+havingRulesThatTrigger :: Monad m => URI -> Pipe RuleSet URI m ()
 havingRulesThatTrigger url = flip hasTriggeringRuleOn url <$> await 
-                         >>= maybe (havingRulesThatTrigger url) (yield . Just)
+                         >>= maybe (havingRulesThatTrigger url) yield
 
 havingCookieRulesThatTrigger :: Monad m => Cookie -> Pipe RuleSet Bool m ()
 havingCookieRulesThatTrigger cookie = flip hasTriggeringCookieRuleOn cookie <$> await

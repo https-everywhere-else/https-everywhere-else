@@ -4,6 +4,7 @@
 
 module Main (main) where
 
+import "base" Data.Maybe (maybe)
 import "base" Data.Monoid ((<>))
 import "bytestring" Data.ByteString.Char8 (pack, unpack)
 import "http-proxy" Network.HTTP.Proxy (runProxySettings, defaultProxySettings, Settings(..), Request(..))
@@ -17,9 +18,7 @@ httpRedirect to = responseLBS status302 [("Location", pack . show $ to)] ""
 
 tryHTTPS :: [RuleSet] -> Request -> Either Response Request
 tryHTTPS rs Request{..} = case parseURI . unpack $ requestPath <> queryString of
-  Just uri ->
-    let rewrite = rewriteURL rs uri in
-      if uri == rewrite then return Request{..} else Left $ httpRedirect rewrite
+  Just uri -> maybe (return Request{..}) (Left . httpRedirect) (rewriteURL rs uri)
   Nothing -> return Request{..}
 
 main :: IO ()
