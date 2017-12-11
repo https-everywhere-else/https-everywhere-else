@@ -33,21 +33,21 @@ import Data.HTTPSEverywhere.Rules.Internal.Types (RuleSet(..), Target(..), Exclu
 
 getRulesets' :: Producer RuleSet IO ()
 getRulesets' = lift Raw.getRules
-          >>= flip (for . each) (flip (for . each) yield <=< lift . (parseRuleSets <$$> Raw.getRule))
+           >>= flip (for . each) (flip (for . each) yield <=< lift . (parseRuleSets <$$> Raw.getRule))
 
 getRulesets :: IO [RuleSet]
 getRulesets = toListM getRulesets'
 
-getRulesetsMatching :: [RuleSet] -> URI -> Producer RuleSet IO ()
+getRulesetsMatching :: Monad m => [RuleSet] -> URI -> Producer RuleSet m ()
 getRulesetsMatching rs url = each rs
                          >-> filter (flip hasTargetMatching url)
                          >-> filter (not . flip hasExclusionMatching url)
 
-havingRulesThatTrigger :: URI -> Pipe RuleSet (Maybe URI) IO ()
+havingRulesThatTrigger :: Monad m => URI -> Pipe RuleSet (Maybe URI) m ()
 havingRulesThatTrigger url = flip hasTriggeringRuleOn url <$> await 
                          >>= maybe (havingRulesThatTrigger url) (yield . Just)
 
-havingCookieRulesThatTrigger :: Cookie -> Pipe RuleSet Bool IO ()
+havingCookieRulesThatTrigger :: Monad m => Cookie -> Pipe RuleSet Bool m ()
 havingCookieRulesThatTrigger cookie = flip hasTriggeringCookieRuleOn cookie <$> await
                                   >>= bool (havingCookieRulesThatTrigger cookie) (yield True)
 

@@ -19,8 +19,7 @@ parse = forever $ parseURI <$> await >>= maybe (return ()) yield
 check :: [RuleSet] -> Pipe URI Bool IO ()
 check rs = forever $ do
   src <- await
-  tgt <- lift $ rewriteURL rs src
-  yield $ src /= tgt
+  yield $ src /= rewriteURL rs src
 
 fold :: Monad m => Fold a b -> Producer a m () -> m b
 fold (Fold step begin done) = Pipes.fold step begin done

@@ -12,20 +12,18 @@ import "https-everywhere-rules" Data.HTTPSEverywhere.Rules (getRulesets, rewrite
 import "network-uri" Network.URI (URI, parseURI)
 import "wai" Network.Wai (Response, responseLBS)
 
-(<&>) :: Functor f => f a -> (a -> b) -> f b
-(<&>) = flip fmap; infixl 1 <&>
-
 httpRedirect :: URI -> Response
 httpRedirect to = responseLBS status302 [("Location", pack . show $ to)] ""
 
-tryHTTPS :: [RuleSet] -> Request -> IO (Either Response Request)
+tryHTTPS :: [RuleSet] -> Request -> Either Response Request
 tryHTTPS rs Request{..} = case parseURI . unpack $ requestPath <> queryString of
-  Just uri -> rewriteURL rs uri <&> \rewrite -> if rewrite == uri
-    then return Request{..}
-    else Left $ httpRedirect rewrite
-  Nothing -> return $ Right Request{..}
+  Just uri ->
+    let rewrite = rewriteURL rs uri in
+      if uri == rewrite then return Request{..} else Left $ httpRedirect rewrite
+  Nothing -> return Request{..}
 
 main :: IO ()
 main = do
-  rulesets <- getRulesets
-  runProxySettings $ defaultProxySettings { proxyRequestModifier = tryHTTPS rulesets }
+  rules <- getRulesets
+  runProxySettings $ defaultProxySettings
+    { proxyRequestModifier = return . tryHTTPS rules }
