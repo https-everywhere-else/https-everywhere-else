@@ -658,19 +658,9 @@ test-suite spec
     attoparsec,
     directory,
     errors,
-    filepath,
     hspec,
-    http-client,
-    lens,
-    mtl,
-    network,
-    network-uri,
-    pipes,
-    string-conversions,
-    taggy-lens,
     text,
-    text-icu,
-    https-everywhere-rules
+    text-icu
   main-is:
     Spec.hs
   hs-source-dirs:
@@ -683,12 +673,6 @@ test-suite spec
   ghc-options:
     -Wall
   other-modules:
-    Data.HTTPSEverywhere.Rules.Internal,
-    Data.HTTPSEverywhere.Rules.Internal.Parser,
-    Data.HTTPSEverywhere.Rules.Internal.ParserSpec,
-    Data.HTTPSEverywhere.Rules.Internal.Raw,
-    Data.HTTPSEverywhere.Rules.Internal.Types,
-    Data.HTTPSEverywhere.Rules.InternalSpec,
     Data.Text.ICU.Extras,
     Data.Text.ICU.ExtrasSpec
 
