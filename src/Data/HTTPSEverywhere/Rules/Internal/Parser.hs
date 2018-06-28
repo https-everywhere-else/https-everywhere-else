@@ -17,7 +17,6 @@ import Control.Monad (join)
 import Control.Monad.State (State, evalState, modify', gets)
 import Data.Bifunctor (bimap)
 import Data.Bool (bool)
-import Data.Functor.Infix ((<$$>))
 import Data.Maybe (catMaybes)
 import Data.String.Conversions (cs)
 import qualified Data.Text as Strict (Text)
@@ -31,7 +30,7 @@ import Data.HTTPSEverywhere.Rules.Internal.Types (RuleSet(..), Target(..), Rule(
 import Data.Text.ICU.Extras (match, findAndReplace)
 
 parseRuleSets :: Lazy.Text -> [RuleSet]
-parseRuleSets = catMaybes <$$> toListOf $ html . allNamed (only "ruleset") . to parseRuleSet
+parseRuleSets = fmap catMaybes <$> toListOf $ html . allNamed (only "ruleset") . to parseRuleSet
 
 parseRuleSet :: Element -> Maybe RuleSet
 parseRuleSet xml = xml ^. attr "name" <&> \ruleSetName -> do
@@ -65,7 +64,7 @@ parseRule element = do
   return . Rule $ join . fmap (parseURI . cs) . substitute . cs . show
 
 parseExclusion :: Strict.Text -> Maybe Exclusion
-parseExclusion = Exclusion . (. cs . show) <$$> match
+parseExclusion = fmap (Exclusion . (. cs . show))  <$> match
 
 parseCookieRule :: Element -> Maybe CookieRule
 parseCookieRule element = CookieRule <$> do

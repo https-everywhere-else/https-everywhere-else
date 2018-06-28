@@ -4,7 +4,6 @@ module Data.HTTPSEverywhere.Rules.Internal.Raw (
 ) where
 
 import Prelude hiding (readFile)
-import Data.Functor.Infix ((<$$>))
 import Data.Text.Lazy (Text)
 import Data.Text.Lazy.IO (readFile)
 import System.Directory (getDirectoryContents)
@@ -16,8 +15,8 @@ getRule :: FilePath -> IO Text
 getRule = readFile
 
 getRules :: IO [FilePath]
-getRules = getDataFileName [] >>= filter isXML <$$> getAbsoluteDirectoryContents
+getRules = getDataFileName [] >>= fmap (filter isXML) <$> getAbsoluteDirectoryContents
   where isXML = (== ".xml") . takeExtension
 
 getAbsoluteDirectoryContents :: FilePath -> IO [FilePath]
-getAbsoluteDirectoryContents x = combine x <$$> getDirectoryContents x
+getAbsoluteDirectoryContents x = fmap (combine x) <$> getDirectoryContents x

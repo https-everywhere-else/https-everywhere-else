@@ -13,7 +13,7 @@ license-file:
 author:
   vi
 maintainer:
-  vi@zalora.com
+  vi@computational.law
 category:
   Data
 build-type:
@@ -628,22 +628,21 @@ library
     Data.Text.ICU.Extras,
     Paths_https_everywhere_rules
   build-depends:
-    base               >= 4.7  && < 4.10,
-    attoparsec         >= 0.12 && < 0.14,
-    directory          >= 1.2  && < 1.4,
-    errors             >= 1.4  && < 2.2,
-    filepath           >= 1.3  && < 1.5,
-    functor-infix      >= 0.0  && < 0.1,
-    http-client        >= 0.3  && < 0.6,
-    lens               >= 4.3  && < 4.16,
-    mtl                >= 2.2  && < 2.3,
-    network            >= 2.6  && < 2.7,
-    network-uri        >= 2.6  && < 2.7,
-    pipes              >= 4.1  && < 4.4,
-    string-conversions >= 0.3  && < 0.5,
-    taggy-lens         >= 0.1  && < 0.2,
-    text               >= 1.1  && < 1.3,
-    text-icu           >= 0.6  && < 0.8
+    base,
+    attoparsec,
+    directory,
+    errors,
+    filepath,
+    http-client,
+    lens,
+    mtl,
+    network,
+    network-uri,
+    pipes,
+    string-conversions,
+    taggy-lens,
+    text,
+    text-icu
   hs-source-dirs:
     src
   default-language:
@@ -655,23 +654,22 @@ test-suite spec
   type:
     exitcode-stdio-1.0
   build-depends:
-    base               >= 4.7  && < 4.10,
-    attoparsec         >= 0.12 && < 0.14,
-    directory          >= 1.2  && < 1.4,
-    errors             >= 1.4  && < 2.2,
-    filepath           >= 1.3  && < 1.5,
-    functor-infix      >= 0.0  && < 0.1,
-    hspec              >= 2.0  && < 2.5,
-    http-client        >= 0.3  && < 0.6,
-    lens               >= 4.3  && < 4.16,
-    mtl                >= 2.2  && < 2.3,
-    network            >= 2.6  && < 2.7,
-    network-uri        >= 2.6  && < 2.7,
-    pipes              >= 4.1  && < 4.4,
-    string-conversions >= 0.3  && < 0.5,
-    taggy-lens         >= 0.1  && < 0.2,
-    text               >= 1.1  && < 1.3,
-    text-icu           >= 0.6  && < 0.8,
+    base,
+    attoparsec,
+    directory,
+    errors,
+    filepath,
+    hspec,
+    http-client,
+    lens,
+    mtl,
+    network,
+    network-uri,
+    pipes,
+    string-conversions,
+    taggy-lens,
+    text,
+    text-icu,
     https-everywhere-rules
   main-is:
     Spec.hs
@@ -709,7 +707,7 @@ executable redirect-proxy
     RedirectProxy.hs
   if flag(build-examples)
     build-depends:
-      base >= 4.7  && < 4.10,
+      base,
       bytestring,
       http-proxy,
       http-types,

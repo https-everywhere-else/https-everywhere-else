@@ -19,7 +19,6 @@ import Control.Applicative ((<*>), (<$>))
 import Control.Lens ((&))
 import Control.Monad ((<=<), join)
 import Data.Bool (bool)
-import Data.Functor.Infix ((<$$>))
 import Data.List (find)
 import Data.Maybe (isJust)
 import Network.HTTP.Client (Cookie(..))
@@ -33,7 +32,7 @@ import Data.HTTPSEverywhere.Rules.Internal.Types (RuleSet(..), Target(..), Exclu
 
 getRulesets' :: Producer RuleSet IO ()
 getRulesets' = lift Raw.getRules
-           >>= flip (for . each) (flip (for . each) yield <=< lift . (parseRuleSets <$$> Raw.getRule))
+           >>= flip (for . each) (flip (for . each) yield <=< lift . (fmap parseRuleSets <$> Raw.getRule))
 
 getRulesets :: IO [RuleSet]
 getRulesets = toListM getRulesets'
@@ -53,19 +52,19 @@ havingCookieRulesThatTrigger cookie = flip hasTriggeringCookieRuleOn cookie <$> 
 
 hasTargetMatching :: RuleSet -> URI -> Bool
 hasTargetMatching ruleset url = getTargets ruleset <*> [url] & or
-  where getTargets = getTarget <$$> ruleSetTargets
+  where getTargets = fmap getTarget <$> ruleSetTargets
 
 hasExclusionMatching :: RuleSet -> URI -> Bool
 hasExclusionMatching ruleset url = getExclusions ruleset <*> [url] & or
-  where getExclusions = getExclusion <$$> ruleSetExclusions
+  where getExclusions = fmap getExclusion <$> ruleSetExclusions
 
 hasTriggeringRuleOn :: RuleSet -> URI -> Maybe URI -- Nothing ~ False
 hasTriggeringRuleOn ruleset url = getRules ruleset <*> [url] & find isJust & join
-  where getRules = getRule <$$> ruleSetRules
+  where getRules = fmap getRule <$> ruleSetRules
 
 hasTriggeringCookieRuleOn :: RuleSet -> Cookie -> Bool
 hasTriggeringCookieRuleOn ruleset cookie = getCookieRules ruleset <*> [cookie] & or
-  where getCookieRules = getCookieRule <$$> ruleSetCookieRules
+  where getCookieRules = fmap getCookieRule <$> ruleSetCookieRules
 
 setSecureFlag :: Cookie -> Cookie
 setSecureFlag cookie = cookie { cookie_secure_only = True }

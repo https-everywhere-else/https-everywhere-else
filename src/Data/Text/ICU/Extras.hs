@@ -17,7 +17,6 @@ import Control.Applicative ((<$>), (<*>), (*>), (<|>))
 import Control.Error (hush)
 import Data.Attoparsec.Text (Parser, char, digit, takeWhile1, string, many', parseOnly)
 import Data.Char (digitToInt)
-import Data.Functor.Infix ((<$$>), (<&>))
 import Data.Maybe (isJust)
 import Data.Monoid (Monoid(mappend, mconcat))
 import Data.Text (Text)
@@ -27,7 +26,7 @@ regex :: Text -> Maybe Regex
 regex = hush . regex' []
 
 match :: Text -> Maybe (Text -> Bool)
-match = (isJust <$$> find) <$$> regex
+match = fmap (fmap isJust <$> find) <$> regex
 
 findAndReplace :: Text -> Text -> Maybe (Text -> Maybe Text)
 findAndReplace pattern replacement = (.)
@@ -41,7 +40,7 @@ data Segment = Reference Int | Literal Text deriving (Show, Eq)
 -- JavaScript admits at most nine capture groups, so this is the correct
 -- (and likely intended) interpretation.
 parseReference :: Parser Segment
-parseReference = char '$' *> digit <&> Reference . digitToInt
+parseReference = (Reference . digitToInt) <$> (char '$' *> digit)
 
 parseLiteral :: Parser Segment
 parseLiteral = Literal <$> takeWhile1 (/= '$')

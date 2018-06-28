@@ -7,7 +7,6 @@ module Data.HTTPSEverywhere.Rules (
 
 import Prelude hiding (null, head)
 import Data.Bool (bool)
-import Data.Functor.Infix ((<$$>), (<$$$>))
 import Network.HTTP.Client (Cookie)
 import Network.URI (URI)
 import Pipes ((>->))
@@ -19,11 +18,11 @@ rewriteURL' :: Monad m => [RuleSet] -> URI -> m (Maybe URI)
 rewriteURL' rs url = head $ getRulesetsMatching rs url >-> havingRulesThatTrigger url
 
 rewriteURL :: [RuleSet] -> (URI -> Maybe URI)
-rewriteURL = runIdentity <$$> rewriteURL'
+rewriteURL = fmap runIdentity <$> rewriteURL'
 
 rewriteCookie' :: Monad m => [RuleSet] -> URI -> Cookie -> m (Maybe Cookie)
 rewriteCookie' rs url cookie = Just (setSecureFlag cookie) `bool` Nothing <$> null producer
   where producer = getRulesetsMatching rs url >-> havingCookieRulesThatTrigger cookie
 
 rewriteCookie :: [RuleSet] -> URI -> (Cookie -> Maybe Cookie)
-rewriteCookie = runIdentity <$$$> rewriteCookie'
+rewriteCookie = fmap (fmap runIdentity) <$> rewriteCookie'
