@@ -625,6 +625,8 @@ library
     Data.HTTPSEverywhere.Rules.Internal.Parser,
     Data.HTTPSEverywhere.Rules.Internal.Raw,
     Data.HTTPSEverywhere.Rules.Internal.Types,
+    Data.ByteString.RadixTrie,
+    Data.Text.RadixTrie,
     Data.Text.ICU.Extras,
     Paths_https_everywhere_rules
   build-depends:
@@ -642,7 +644,8 @@ library
     string-conversions,
     taggy-lens,
     text,
-    text-icu
+    text-icu,
+    vector
   hs-source-dirs:
     src
   default-language:
