@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveFunctor                 #-}
+{-# LANGUAGE DeriveLift                    #-}
 {-# LANGUAGE OverloadedStrings             #-}
 {-# LANGUAGE RecordWildCards               #-}
 {-# LANGUAGE TupleSections                 #-}
@@ -21,19 +22,21 @@ import Prelude hiding
 import Data.ByteString
   (ByteString, uncons, isPrefixOf, null, drop, length, head, tail,
    take, length, last, append, cons)
+import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Vector (Vector, (!), generate, modify, imap)
 import qualified Data.Vector as Vector (toList)
 import qualified Data.Vector.Mutable as Mutable (modify)
-import Data.Maybe (fromMaybe, isJust, maybeToList)
+import Language.Haskell.TH.Syntax (Lift)
+import Instances.TH.Lift ()
 
 data Leaf a =
   Prefix ByteString (RadixTrie a) |
   Split (Vector {- 2 ^ 8 -} (Maybe (RadixTrie a))) |
-  Vacuum deriving (Show, Functor)
+  Vacuum deriving (Lift, Show, Functor)
 
 data RadixTrie a =
   RadixTrie { label :: Maybe a, children :: Leaf a }
-  deriving (Show, Functor)
+  deriving (Lift, Show, Functor)
 
 empty :: RadixTrie a
 empty = RadixTrie Nothing Vacuum

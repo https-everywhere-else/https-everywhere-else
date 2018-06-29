@@ -1,28 +1,22 @@
 module Data.HTTPSEverywhere.Rules (
-  RuleSet,
-  getRulesets,
+  RuleTrie,
   rewriteURL,
   rewriteCookie
 ) where
 
-import Prelude hiding (null, head)
-import Data.Bool (bool)
-import Network.HTTP.Client (Cookie)
 import Network.URI (URI)
-import Pipes ((>->))
-import Pipes.Prelude (head, null)
-import Control.Monad.Identity (Identity(runIdentity))
-import Data.HTTPSEverywhere.Rules.Internal (getRulesets, getRulesetsMatching, havingRulesThatTrigger, havingCookieRulesThatTrigger, setSecureFlag, RuleSet)
+import Data.Monoid (First(..), Any(..))
+import Data.Bool (bool)
+import Network.HTTP.Client (Cookie(..))
 
-rewriteURL' :: Monad m => [RuleSet] -> URI -> m (Maybe URI)
-rewriteURL' rs url = head $ getRulesetsMatching rs url >-> havingRulesThatTrigger url
+import Data.HTTPSEverywhere.Rules.Internal
 
-rewriteURL :: [RuleSet] -> (URI -> Maybe URI)
-rewriteURL = fmap runIdentity <$> rewriteURL'
+rewriteURL :: URI -> Maybe URI
+rewriteURL uri = getFirst . mconcat $
+  map (First . havingRulesThatTrigger uri) (getRulesetsMatching uri)
 
-rewriteCookie' :: Monad m => [RuleSet] -> URI -> Cookie -> m (Maybe Cookie)
-rewriteCookie' rs url cookie = Just (setSecureFlag cookie) `bool` Nothing <$> null producer
-  where producer = getRulesetsMatching rs url >-> havingCookieRulesThatTrigger cookie
-
-rewriteCookie :: [RuleSet] -> URI -> (Cookie -> Maybe Cookie)
-rewriteCookie = fmap (fmap runIdentity) <$> rewriteCookie'
+rewriteCookie :: URI -> (Cookie -> Maybe Cookie)
+rewriteCookie uri cookie =
+  bool Nothing (Just $ setSecureFlag cookie) . getAny . mconcat $
+    map (Any . havingCookieRulesThatTrigger cookie)
+      (getRulesetsMatching uri)

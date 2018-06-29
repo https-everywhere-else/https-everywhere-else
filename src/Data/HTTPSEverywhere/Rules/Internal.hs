@@ -1,70 +1,49 @@
-{-# LANGUAGE CPP #-}
-
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RecordWildCards #-}
+ 
 module Data.HTTPSEverywhere.Rules.Internal (
-  getRulesets,
+  RuleTrie,
   getRulesetsMatching,
   havingRulesThatTrigger,
   havingCookieRulesThatTrigger,
-  setSecureFlag,
-  RuleSet,
-#ifdef TEST
-  hasTargetMatching,
-  hasTriggeringRuleOn,
-  hasExclusionMatching
-#endif
+  setSecureFlag
 ) where
 
-import Prelude hiding (readFile, filter)
-import Control.Applicative ((<*>), (<$>))
-import Control.Lens ((&))
-import Control.Monad ((<=<), join)
-import Data.Bool (bool)
-import Data.List (find)
-import Data.Maybe (isJust)
+import Control.Monad (MonadPlus(..))
+import Data.Text (pack)
+import Data.Maybe (maybeToList)
+import Data.Monoid (First(..))
 import Network.HTTP.Client (Cookie(..))
-import Network.URI (URI)
-import Pipes (Pipe, Producer, for, each, await, yield, lift, (>->))
-import Pipes.Prelude (filter, toListM)
+import Network.URI (URI, uriAuthority, uriRegName)
 
-import Data.HTTPSEverywhere.Rules.Internal.Parser (parseRuleSets)
-import qualified Data.HTTPSEverywhere.Rules.Internal.Raw as Raw (getRule, getRules)
-import Data.HTTPSEverywhere.Rules.Internal.Types (RuleSet(..), Target(..), Exclusion(..), Rule(..), CookieRule(..))
+import Data.HTTPSEverywhere.Rules.Internal.Trie (RuleTrie)
+import qualified Data.HTTPSEverywhere.Rules.Internal.Trie as Trie
+import Data.HTTPSEverywhere.Rules.Internal.Types
+  (RuleSet(..), getRule, getExclusion, getCookieRule)
+import qualified Data.HTTPSEverywhere.Rules.Internal.Trie.Supercompilation
+  as Supercompilation (trie)
 
-getRulesets' :: Producer RuleSet IO ()
-getRulesets' = lift Raw.getRules
-           >>= flip (for . each) (flip (for . each) yield <=< lift . (fmap parseRuleSets <$> Raw.getRule))
+trie :: RuleTrie
+trie = $(Supercompilation.trie)
 
-getRulesets :: IO [RuleSet]
-getRulesets = toListM getRulesets'
+unless :: MonadPlus m => Bool -> m a -> m a
+unless True action = action
+unless False _ = mzero
 
-getRulesetsMatching :: Monad m => [RuleSet] -> URI -> Producer RuleSet m ()
-getRulesetsMatching rs url = each rs
-                         >-> filter (flip hasTargetMatching url)
-                         >-> filter (not . flip hasExclusionMatching url)
+getRulesetsMatching :: URI -> [RuleSet]
+getRulesetsMatching uri = do
+  let hostname = fmap (pack . uriRegName) (uriAuthority uri)
+  r@RuleSet{..} <- maybeToList hostname >>= Trie.lookup trie
+  unless (any (\e -> getExclusion e uri) ruleSetExclusions) $
+    return r
 
-havingRulesThatTrigger :: Monad m => URI -> Pipe RuleSet URI m ()
-havingRulesThatTrigger url = flip hasTriggeringRuleOn url <$> await 
-                         >>= maybe (havingRulesThatTrigger url) yield
+havingRulesThatTrigger :: URI -> RuleSet -> Maybe URI
+havingRulesThatTrigger uri RuleSet{..} =
+  getFirst . mconcat $ map (First . ($ uri) . getRule) ruleSetRules
 
-havingCookieRulesThatTrigger :: Monad m => Cookie -> Pipe RuleSet Bool m ()
-havingCookieRulesThatTrigger cookie = flip hasTriggeringCookieRuleOn cookie <$> await
-                                  >>= bool (havingCookieRulesThatTrigger cookie) (yield True)
-
-hasTargetMatching :: RuleSet -> URI -> Bool
-hasTargetMatching ruleset url = getTargets ruleset <*> [url] & or
-  where getTargets = fmap getTarget <$> ruleSetTargets
-
-hasExclusionMatching :: RuleSet -> URI -> Bool
-hasExclusionMatching ruleset url = getExclusions ruleset <*> [url] & or
-  where getExclusions = fmap getExclusion <$> ruleSetExclusions
-
-hasTriggeringRuleOn :: RuleSet -> URI -> Maybe URI -- Nothing ~ False
-hasTriggeringRuleOn ruleset url = getRules ruleset <*> [url] & find isJust & join
-  where getRules = fmap getRule <$> ruleSetRules
-
-hasTriggeringCookieRuleOn :: RuleSet -> Cookie -> Bool
-hasTriggeringCookieRuleOn ruleset cookie = getCookieRules ruleset <*> [cookie] & or
-  where getCookieRules = fmap getCookieRule <$> ruleSetCookieRules
+havingCookieRulesThatTrigger :: Cookie -> RuleSet -> Bool
+havingCookieRulesThatTrigger cookie RuleSet{..} =
+  any (($ cookie) . getCookieRule) ruleSetCookieRules
 
 setSecureFlag :: Cookie -> Cookie
 setSecureFlag cookie = cookie { cookie_secure_only = True }
