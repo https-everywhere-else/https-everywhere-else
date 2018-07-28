@@ -15,18 +15,28 @@ type Target struct {
 	Host string `xml:"host,attr"`
 }
 
+type Test struct {
+	URL string `xml:"url,attr"`
+}
+
 type Rule struct {
 	From string `xml:"from,attr"`
 	To   string `xml:"to,attr"`
 }
 
-type Ruleset struct {
-	Name    string   `xml:"name,attr"`
-	Targets []Target `xml:"target"`
-	Rules   []Rule   `xml:"rule"`
+type Exclusion struct {
+	Pattern string `xml:"pattern,attr"`
 }
 
-type Rulemap map[string][]Rule
+type Ruleset struct {
+	Name       string      `xml:"name,attr"`
+	Exclusions []Exclusion `xml:"exclusion"`
+	Targets    []Target    `xml:"target"`
+	Rules      []Rule      `xml:"rule"`
+	Tests      []Test      `xml:"test"`
+}
+
+type Rulemap map[string]Ruleset
 
 func loadXML(data []byte) (ruleset Ruleset, err error) {
 	err = xml.Unmarshal(data, &ruleset)
@@ -57,7 +67,7 @@ func load() (Rulemap, error) {
 			return nil, err
 		}
 		for _, target := range ruleset.Targets {
-			rulemap[target.Host] = ruleset.Rules
+			rulemap[target.Host] = ruleset
 		}
 	}
 	return rulemap, nil
@@ -72,14 +82,14 @@ func extractDomain(url string) (string, error) {
 	}
 }
 
-func (rulemap *Rulemap) lookup(domain string) []Rule {
+func (rulemap *Rulemap) lookup(domain string) (Ruleset, bool) {
 	for domain != "*." {
-		if rules, ok := (*rulemap)[domain]; ok {
-			return rules
+		if ruleset, ok := (*rulemap)[domain]; ok {
+			return ruleset, true
 		}
 		domain = generalizeRegex.ReplaceAllString(domain, "*.")
 	}
-	return nil
+	return Ruleset{}, false
 }
 
 func (rulemap *Rulemap) applyHTTPS(url string) (string, error) {
@@ -87,7 +97,20 @@ func (rulemap *Rulemap) applyHTTPS(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for _, rule := range rulemap.lookup(domain) {
+	ruleset, ok := rulemap.lookup(domain)
+	if !ok {
+		return url, nil
+	}
+	for _, excl := range ruleset.Exclusions {
+		regex, err := regexp.Compile(excl.Pattern)
+		if err != nil {
+			return "", err
+		}
+		if regex.MatchString(url) {
+			return url, nil
+		}
+	}
+	for _, rule := range ruleset.Rules {
 		regex, err := regexp.Compile(rule.From)
 		if err != nil {
 			return "", err
@@ -102,7 +125,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Loaded.\n")
 	input := "blah"
 	reader := bufio.NewReader(os.Stdin)
 	for {
