@@ -1,7 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.HTTPSEverywhere.Rules.Internal.Trie.Supercompilation (
-  trie
+  trie,
+  getTrie
 ) where
 
 import Control.Monad ((<=<))

@@ -23,8 +23,8 @@ import Data.HTTPSEverywhere.Rules.Internal.Types
 import qualified Data.HTTPSEverywhere.Rules.Internal.Trie.Supercompilation
   as Supercompilation (trie)
 
-trie :: RuleTrie
-trie = $(Supercompilation.trie)
+-- trie :: RuleTrie
+-- trie = $(Supercompilation.trie)
 
 unless :: MonadPlus m => Bool -> m a -> m a
 unless True action = action
@@ -33,7 +33,7 @@ unless False _ = mzero
 getRulesetsMatching :: URI -> [RuleSet]
 getRulesetsMatching uri = do
   let hostname = fmap (pack . uriRegName) (uriAuthority uri)
-  r@RuleSet{..} <- maybeToList hostname >>= Trie.lookup trie
+  r@RuleSet{..} <- maybeToList hostname >>= (const [])
   unless (any (\e -> getExclusion e uri) ruleSetExclusions) $
     return r
 
