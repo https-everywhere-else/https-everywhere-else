@@ -49,3 +49,13 @@ First of all, thank you.
 This is all fairly immature as-is, but you're more than welcome to plod in. The best step you can take right now is to drop by the IRC channel [#https-everywhere-else](irc://irc.freenode.net/#https-everywhere-else) on Freenode: indicate what you want to be doing, and we'll work out how to make it happen; indicate any uncertainty, and we will try to clarify it.
 
 Our current focus is on performance improvements. The current implementation relies on a linear search of the ruleset upon each rewrite attempt; this is compromisingly inefficient. We're going to modify the library to perform search on a supercompiled suffix tree, where rather than lookup being on the order of the number of rules, it will be on the order of the depth of the domain - the previous cost being incurred once at compile time.
+
+Building and developing
+--------
+
+### nix
+There is a working `default.nix`. You can run `nix-build`.
+For development, you can run `nix-shell -A env`, and `runghc Setup.hs configure && runghc Setup.hs build`.
+
+### stack
+`stack build` should work.
