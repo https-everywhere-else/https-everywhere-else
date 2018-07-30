@@ -3,9 +3,11 @@ package main
 import "net/http"
 import "log"
 import "io"
+import "os"
 
 type Proxy struct {
 	rulemap *Rulemap
+	info    *log.Logger
 }
 
 func copyHeaders(dst, src http.Header) {
@@ -17,11 +19,15 @@ func copyHeaders(dst, src http.Header) {
 }
 
 func (p Proxy) ServeHTTP(srcWriter http.ResponseWriter, srcRequest *http.Request) {
+	p.info.Printf("%v %v\n", srcRequest.Method, srcRequest.RequestURI)
 	newURL, err := p.rulemap.Apply(srcRequest.RequestURI)
 	if err != nil {
 		log.Println(err)
 		http.Error(srcWriter, "", http.StatusInternalServerError)
 		return
+	}
+	if newURL != srcRequest.RequestURI {
+		p.info.Printf("-> %v\n", newURL)
 	}
 
 	tgtRequest, err := http.NewRequest(srcRequest.Method, newURL, srcRequest.Body)
@@ -56,7 +62,7 @@ func main() {
 		panic(err)
 	}
 	log.Println("loaded")
-	proxy := Proxy{&rulemap}
+	proxy := Proxy{&rulemap, log.New(os.Stderr, "I ", log.LstdFlags)}
 	err = http.ListenAndServe(":1111", proxy)
 	if err != nil {
 		panic(err)
