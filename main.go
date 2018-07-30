@@ -1,15 +1,24 @@
 package main
 
+// TODO: Consider mmapped succinct tries
+// TODO: Cache using encoding/gob for faster startup
+// TODO: Implement HTTP Proxy
+// TODO: Benchmark
+// TODO: Tests
+// TODO: Compile regexes at startup
+// TODO: Figure out if securecookies are applicable
+// TODO: Use only the first matching rule
+// TODO: Try next generalization if exception is hit
+
 import "encoding/xml"
 import "io/ioutil"
+import url_ "net/url"
 import "strings"
 import "regexp"
-import "bufio"
-import "fmt"
-import "os"
+import "log"
 
-var generalizeRegex = regexp.MustCompile(`^(\*\.)?[^.]+(.|$)`)
-var domainRegex = regexp.MustCompile(`^(?:https?://)?(?:[^@/]+@)?([^/:?]+)`)
+var generalizeRegex = regexp.MustCompile(`^(\*\.)?[^.]+(\.|$)`)
+var generalizeRegex2 = regexp.MustCompile(`\.[^.]+$`)
 
 type Target struct {
 	Host string `xml:"host,attr"`
@@ -73,70 +82,77 @@ func load() (Rulemap, error) {
 	return rulemap, nil
 }
 
-func extractDomain(url string) (string, error) {
-	groups := domainRegex.FindStringSubmatch(url)
-	if len(groups) < 2 {
-		return "", fmt.Errorf("domain not found in %v", url)
-	} else {
-		return groups[1], nil
-	}
-}
-
-func (rulemap *Rulemap) lookup(domain string) (Ruleset, bool) {
-	for domain != "*." {
-		if ruleset, ok := (*rulemap)[domain]; ok {
-			return ruleset, true
-		}
-		domain = generalizeRegex.ReplaceAllString(domain, "*.")
-	}
-	return Ruleset{}, false
-}
-
-func (rulemap *Rulemap) applyHTTPS(url string) (string, error) {
-	domain, err := extractDomain(url)
-	if err != nil {
-		return "", err
-	}
-	ruleset, ok := rulemap.lookup(domain)
-	if !ok {
-		return url, nil
-	}
+func (ruleset *Ruleset) excludes(url string) bool {
 	for _, excl := range ruleset.Exclusions {
 		regex, err := regexp.Compile(excl.Pattern)
 		if err != nil {
-			return "", err
+			log.Println(err)
+			return false
 		}
 		if regex.MatchString(url) {
-			return url, nil
+			return true
 		}
 	}
+	return false
+}
+
+func (rulemap *Rulemap) lookup(key, url string) (*Ruleset, bool) {
+	ruleset, ok := (*rulemap)[key]
+	if !ok {
+		return nil, false
+	}
+	if ruleset.excludes(url) {
+		return nil, false
+	}
+	return &ruleset, true
+}
+
+func (rulemap *Rulemap) Get(url string) (*Ruleset, error) {
+	urlObject, err := url_.Parse(url)
+	if err != nil {
+		return nil, err
+	}
+
+	domain := urlObject.Host
+	attempt := domain
+	for attempt != "*." {
+		if ruleset, ok := rulemap.lookup(attempt, url); ok {
+			return ruleset, nil
+		}
+		attempt = generalizeRegex.ReplaceAllString(attempt, "*.")
+	}
+
+	attempt = generalizeRegex2.ReplaceAllString(domain, ".*")
+	for attempt != "*.*" && attempt != "*." {
+		if ruleset, ok := rulemap.lookup(attempt, url); ok {
+			return ruleset, nil
+		}
+		attempt = generalizeRegex.ReplaceAllString(attempt, "*.")
+	}
+	return nil, nil
+}
+
+func (ruleset *Ruleset) Apply(url string) (string, error) {
 	for _, rule := range ruleset.Rules {
 		regex, err := regexp.Compile(rule.From)
 		if err != nil {
 			return "", err
 		}
-		url = regex.ReplaceAllString(url, rule.To)
+		newurl := regex.ReplaceAllString(url, rule.To)
+		if newurl != url {
+			return newurl, nil
+		}
 	}
 	return url, nil
 }
 
-func main() {
-	rulemap, err := load()
+func (rulemap *Rulemap) Apply(url string) (string, error) {
+	ruleset, err := rulemap.Get(url)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	input := "blah"
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		line, _, err := reader.ReadLine()
-		input = string(line)
-		if err != nil {
-			break
-		}
-		output, err := rulemap.applyHTTPS(input)
-		if err != nil {
-			fmt.Printf("%v\n", err)
-		}
-		fmt.Printf("%v\n", output)
+	if ruleset == nil {
+		return url, nil
 	}
+	return ruleset.Apply(url)
 }
