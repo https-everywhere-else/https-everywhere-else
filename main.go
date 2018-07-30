@@ -2,13 +2,10 @@ package main
 
 // TODO: Consider mmapped succinct tries
 // TODO: Cache using encoding/gob for faster startup
-// TODO: Implement HTTP Proxy
 // TODO: Benchmark
 // TODO: Tests
 // TODO: Compile regexes at startup
 // TODO: Figure out if securecookies are applicable
-// TODO: Use only the first matching rule
-// TODO: Try next generalization if exception is hit
 
 import "encoding/xml"
 import "io/ioutil"
