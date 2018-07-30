@@ -17,7 +17,7 @@ func main() {
 		if err != nil {
 			break
 		}
-		output, err := rulemap.apply(input)
+		output, err := rulemap.Apply(input)
 		if err != nil {
 			fmt.Printf("%v\n", err)
 		}

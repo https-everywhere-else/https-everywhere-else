@@ -112,7 +112,7 @@ func (rulemap *Rulemap) Get(url string) (*Ruleset, error) {
 
 	domain := urlObject.Host
 	attempt := domain
-	for attempt != "*." {
+	for attempt != "*." && attempt != "" {
 		if ruleset, ok := rulemap.lookup(attempt, url); ok {
 			return ruleset, nil
 		}
@@ -120,7 +120,7 @@ func (rulemap *Rulemap) Get(url string) (*Ruleset, error) {
 	}
 
 	attempt = generalizeRegex2.ReplaceAllString(domain, ".*")
-	for attempt != "*.*" && attempt != "*." {
+	for attempt != "*.*" && attempt != "*." && attempt != "" {
 		if ruleset, ok := rulemap.lookup(attempt, url); ok {
 			return ruleset, nil
 		}
