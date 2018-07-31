@@ -3,6 +3,7 @@ package main
 import "github.com/yorickvP/https-everywhere-else/rules"
 
 import "net/http"
+import "go/build"
 import "log"
 import "io"
 import "os"
@@ -59,7 +60,12 @@ func (p Proxy) ServeHTTP(srcWriter http.ResponseWriter, srcRequest *http.Request
 }
 
 func main() {
-	rulemap, err := rules.Load("vendor/https-everywhere/rules")
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		gopath = build.Default.GOPATH
+	}
+	rulesPath := gopath + "/src/github.com/yorickvP/https-everywhere-else/vendor/https-everywhere/rules/"
+	rulemap, err := rules.Load(rulesPath)
 	if err != nil {
 		panic(err)
 	}
