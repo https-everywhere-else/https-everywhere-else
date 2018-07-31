@@ -1,13 +1,13 @@
 package main
 
-import "github.com/yorickvP/https-everywhere-else"
+import "github.com/yorickvP/https-everywhere-else/rules"
 
 import "bufio"
 import "fmt"
 import "os"
 
 func main() {
-	rulemap, err := rules.Load()
+	rulemap, err := rules.Load("vendor/https-everywhere/rules")
 	if err != nil {
 		panic(err)
 	}

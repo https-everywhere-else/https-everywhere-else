@@ -1,6 +1,6 @@
 package main
 
-import "github.com/yorickvP/https-everywhere-else"
+import "github.com/yorickvP/https-everywhere-else/rules"
 
 import "net/http"
 import "log"
@@ -59,7 +59,7 @@ func (p Proxy) ServeHTTP(srcWriter http.ResponseWriter, srcRequest *http.Request
 }
 
 func main() {
-	rulemap, err := rules.Load()
+	rulemap, err := rules.Load("vendor/https-everywhere/rules")
 	if err != nil {
 		panic(err)
 	}

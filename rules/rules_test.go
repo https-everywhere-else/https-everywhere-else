@@ -4,8 +4,10 @@ import "math/rand"
 import "testing"
 import "log"
 
+var rulesPath = "../vendor/https-everywhere/rules/"
+
 func loadRulemap() Rulemap {
-	rulemap, err := Load()
+	rulemap, err := Load(rulesPath)
 	if err != nil {
 		log.Panic(err)
 	}

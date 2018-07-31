@@ -4,9 +4,9 @@ package rules
 // TODO: Cache using encoding/gob for faster startup
 // TODO: Benchmark
 // TODO: Tests
-// TODO: Compile regexes at startup
 // TODO: Figure out if securecookies are applicable
-// TODO: Use dlclark/regexp2 to support lookahead regexes
+
+import "github.com/yorickvP/https-everywhere-else/regex"
 
 import "encoding/xml"
 import "io/ioutil"
@@ -53,8 +53,8 @@ func loadXML(data []byte) (ruleset Ruleset, err error) {
 	return
 }
 
-func Load() (Rulemap, error) {
-	files, err := ioutil.ReadDir("rules")
+func Load(rulesPath string) (Rulemap, error) {
+	files, err := ioutil.ReadDir(rulesPath)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func Load() (Rulemap, error) {
 		if !strings.HasSuffix(file.Name(), ".xml") {
 			continue
 		}
-		data, err := ioutil.ReadFile("rules/" + file.Name())
+		data, err := ioutil.ReadFile(rulesPath + "/" + file.Name())
 		if err != nil {
 			return nil, err
 		}
@@ -82,17 +82,12 @@ func Load() (Rulemap, error) {
 
 func (ruleset *Ruleset) excludes(url string) bool {
 	for _, excl := range ruleset.Exclusions {
-		// FIXME: Skip all rules with (?! lookahead because Go can't deal with
-		// them
-		if strings.Contains(excl.Pattern, "(?!") {
-			continue
-		}
-		regex, err := regexp.Compile(excl.Pattern)
+		match, err := regex.Match(excl.Pattern, url)
 		if err != nil {
 			log.Println(err)
 			return false
 		}
-		if regex.MatchString(url) {
+		if match {
 			return true
 		}
 	}
@@ -137,11 +132,10 @@ func (rulemap *Rulemap) Get(url string) (*Ruleset, error) {
 
 func (ruleset *Ruleset) Apply(url string) (string, error) {
 	for _, rule := range ruleset.Rules {
-		regex, err := regexp.Compile(rule.From)
+		newurl, err := regex.Replace(rule.From, rule.To, url)
 		if err != nil {
 			return "", err
 		}
-		newurl := regex.ReplaceAllString(url, rule.To)
 		if newurl != url {
 			return newurl, nil
 		}
