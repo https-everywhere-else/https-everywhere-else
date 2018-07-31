@@ -6,6 +6,7 @@ package rules
 // TODO: Tests
 // TODO: Compile regexes at startup
 // TODO: Figure out if securecookies are applicable
+// TODO: Use dlclark/regexp2 to support lookahead regexes
 
 import "encoding/xml"
 import "io/ioutil"
@@ -81,6 +82,11 @@ func Load() (Rulemap, error) {
 
 func (ruleset *Ruleset) excludes(url string) bool {
 	for _, excl := range ruleset.Exclusions {
+		// FIXME: Skip all rules with (?! lookahead because Go can't deal with
+		// them
+		if strings.Contains(excl.Pattern, "(?!") {
+			continue
+		}
 		regex, err := regexp.Compile(excl.Pattern)
 		if err != nil {
 			log.Println(err)
