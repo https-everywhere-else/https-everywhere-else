@@ -1,4 +1,4 @@
-package main
+package rules
 
 // TODO: Consider mmapped succinct tries
 // TODO: Cache using encoding/gob for faster startup
@@ -52,7 +52,7 @@ func loadXML(data []byte) (ruleset Ruleset, err error) {
 	return
 }
 
-func load() (Rulemap, error) {
+func Load() (Rulemap, error) {
 	files, err := ioutil.ReadDir("rules")
 	if err != nil {
 		return nil, err

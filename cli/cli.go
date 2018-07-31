@@ -1,11 +1,13 @@
 package main
 
+import "github.com/yorickvP/https-everywhere-else"
+
 import "bufio"
 import "fmt"
 import "os"
 
 func main() {
-	rulemap, err := load()
+	rulemap, err := rules.Load()
 	if err != nil {
 		panic(err)
 	}

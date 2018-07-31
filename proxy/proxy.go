@@ -1,12 +1,14 @@
 package main
 
+import "github.com/yorickvP/https-everywhere-else"
+
 import "net/http"
 import "log"
 import "io"
 import "os"
 
 type Proxy struct {
-	rulemap *Rulemap
+	rulemap *rules.Rulemap
 	info    *log.Logger
 }
 
@@ -57,13 +59,13 @@ func (p Proxy) ServeHTTP(srcWriter http.ResponseWriter, srcRequest *http.Request
 }
 
 func main() {
-	rulemap, err := load()
+	rulemap, err := rules.Load()
 	if err != nil {
 		panic(err)
 	}
 	log.Println("loaded")
 	proxy := Proxy{&rulemap, log.New(os.Stderr, "I ", log.LstdFlags)}
-	err = http.ListenAndServe(":1111", proxy)
+	err = http.ListenAndServe(":8080", proxy)
 	if err != nil {
 		panic(err)
 	}
