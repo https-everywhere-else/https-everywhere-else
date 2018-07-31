@@ -1,6 +1,7 @@
 package main
 
 import "net/http"
+import "flag"
 import "log"
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -8,6 +9,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	port := flag.String("port", "1111", "Port to listen on")
+	flag.Parse()
 	http.HandleFunc("/", handler)
-	log.Fatal(http.ListenAndServe(":1111", nil))
+	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }

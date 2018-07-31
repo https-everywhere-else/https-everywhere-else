@@ -23,7 +23,8 @@ type Target struct {
 }
 
 type Test struct {
-	URL string `xml:"url,attr"`
+	URL     string `xml:"url,attr"`
+	Rewrite bool   `xml:"rewrite,attr"`
 }
 
 type Rule struct {
@@ -45,11 +46,14 @@ type Ruleset struct {
 
 type Rulemap map[string]Ruleset
 
+var rulesets []Ruleset
+
 func loadXML(data []byte) (ruleset Ruleset, err error) {
 	err = xml.Unmarshal(data, &ruleset)
 	if err != nil {
 		return
 	}
+	rulesets = append(rulesets, ruleset)
 	return
 }
 
