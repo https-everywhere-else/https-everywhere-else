@@ -1,4 +1,4 @@
-package regex
+package rules
 
 import "github.com/dlclark/regexp2"
 

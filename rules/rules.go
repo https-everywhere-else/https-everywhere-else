@@ -6,8 +6,6 @@ package rules
 // TODO: Tests
 // TODO: Figure out if securecookies are applicable
 
-import "github.com/yorickvP/https-everywhere-else/regex"
-
 import "encoding/xml"
 import "io/ioutil"
 import url_ "net/url"
@@ -82,7 +80,7 @@ func Load(rulesPath string) (Rulemap, error) {
 
 func (ruleset *Ruleset) excludes(url string) bool {
 	for _, excl := range ruleset.Exclusions {
-		match, err := regex.Match(excl.Pattern, url)
+		match, err := Match(excl.Pattern, url)
 		if err != nil {
 			log.Println(err)
 			return false
@@ -132,7 +130,7 @@ func (rulemap *Rulemap) Get(url string) (*Ruleset, error) {
 
 func (ruleset *Ruleset) Apply(url string) (string, error) {
 	for _, rule := range ruleset.Rules {
-		newurl, err := regex.Replace(rule.From, rule.To, url)
+		newurl, err := Replace(rule.From, rule.To, url)
 		if err != nil {
 			return "", err
 		}

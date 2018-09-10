@@ -1,6 +1,6 @@
 package main
 
-import "github.com/yorickvP/https-everywhere-else/rules"
+import "github.com/https-everywhere-else/https-everywhere-else/rules"
 
 import "bufio"
 import "fmt"

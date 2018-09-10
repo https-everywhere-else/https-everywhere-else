@@ -1,6 +1,6 @@
 package main
 
-import "github.com/yorickvP/https-everywhere-else/rules"
+import "github.com/https-everywhere-else/https-everywhere-else/rules"
 
 import "net/http"
 import "go/build"
@@ -64,7 +64,7 @@ func main() {
 	if gopath == "" {
 		gopath = build.Default.GOPATH
 	}
-	rulesPath := gopath + "/src/github.com/yorickvP/https-everywhere-else/vendor/https-everywhere/rules/"
+	rulesPath := gopath + "/src/github.com/https-everywhere-else/https-everywhere-else/vendor/https-everywhere/rules/"
 	rulemap, err := rules.Load(rulesPath)
 	if err != nil {
 		panic(err)
